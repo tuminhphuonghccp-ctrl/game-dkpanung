@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Học Tập Phản Ứng Ion - Trực Tuyến Google Sheets</title>
+    
+    <style>
+        :root {
+            --primary: #0f766e;
+            --primary-dark: #115e59;
+            --primary-light: #f0fdfa;
+            --secondary: #1e40af;
+            --secondary-light: #eff6ff;
+            --accent: #d97706;
+            --accent-light: #fef3c7;
+            --success: #16a34a;
+            --success-bg: #dcfce7;
+            --danger: #dc2626;
+            --danger-bg: #fee2e2;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px; }
+
+        .app-shell { width: 100%; max-width: 1180px; background: var(--card); border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; min-height: 88vh; }
+
+        .top-navbar { background: #0f172a; color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-logo { width: 40px; height: 40px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+        .brand-text h1 { font-size: 1.15rem; font-weight: 700; color: #f8fafc; }
+        .brand-text p { font-size: 0.8rem; color: #94a3b8; }
+
+        .module-tabs { display: flex; gap: 10px; background: #1e293b; padding: 5px; border-radius: 10px; }
+        .tab-btn { padding: 9px 18px; border: none; border-radius: 7px; background: transparent; color: #cbd5e1; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .tab-btn:hover { color: white; background: rgba(255,255,255,0.06); }
+        .tab-btn.active-student { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(15, 118, 110, 0.4); }
+        .tab-btn.active-teacher { background: var(--secondary); color: white; box-shadow: 0 2px 8px rgba(30, 64, 175, 0.4); }
+        
+        .hidden { display: none !important; }
+
+        /* ================= MODULE SINH VIÊN ================= */
+        .login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; background: radial-gradient(circle at top right, #ccfbf1, #f8fafc 60%); }
+        .login-card { background: white; width: 100%; max-width: 480px; padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 2px solid #99f6e4; }
+        .login-card h2 { color: var(--primary-dark); font-size: 1.5rem; margin-bottom: 8px; text-align: center; }
+        .login-card p.sub { color: var(--text-muted); text-align: center; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.4; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.92rem; color: #334155; }
+        .text-input { width: 100%; padding: 12px 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1rem; font-weight: 600; transition: border-color 0.2s; }
+        .text-input:focus { outline: none; border-color: var(--primary); }
+        
+        .speed-bonus-banner { background: #fffbeb; border: 1px dashed #f59e0b; color: #92400e; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+        .btn-login-submit { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 4px; transition: background 0.2s; }
+        .btn-login-submit:hover { background: var(--primary-dark); }
+
+        .student-bar { background: var(--primary-light); padding: 12px 24px; border-bottom: 2px solid #ccfbf1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .student-identity { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .group-pill { background: var(--primary); color: white; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; }
+        .xp-pill { background: var(--accent-light); border: 2px solid var(--accent); color: #92400e; padding: 5px 12px; border-radius: 20px; font-weight: 800; font-size: 0.92rem; }
+        .timer-pill { background: #f1f5f9; border: 2px solid #cbd5e1; color: #334155; padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+        
+        .btn-submit-assignment { background: #dc2626; color: white; border: none; padding: 7px 16px; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3); transition: all 0.2s; }
+        .btn-submit-assignment:hover { background: #b91c1c; transform: translateY(-1px); }
+        .btn-submit-assignment.submitted { background: var(--success); box-shadow: none; }
+        .btn-switch-group { background: white; border: 1px solid #94a3b8; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: #334155; }
+        .btn-switch-group:hover { background: #e2e8f0; }
+
+        .nav-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .pill { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #cbd5e1; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .pill.current { border-color: var(--primary); background: var(--primary); color: white; }
+        .pill.done { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+
+        .submitted-notice { background: #dcfce7; border-bottom: 2px solid #86efac; color: #166534; padding: 10px 24px; font-weight: 700; font-size: 0.92rem; display: flex; justify-content: space-between; align-items: center; }
+
+        .student-workspace { padding: 24px; display: grid; grid-template-columns: 310px 1fr; gap: 24px; flex: 1; }
+        @media (max-width: 900px) { .student-workspace { grid-template-columns: 1fr; } }
+
+        .lab-panel { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .exp-tag { background: var(--primary); color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; }
+        .exp-title { font-size: 1.12rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+
+        .beaker-stage { width: 170px; height: 190px; position: relative; margin: 10px 0 15px 0; display: flex; justify-content: center; align-items: flex-end; }
+        .beaker { width: 125px; height: 160px; border: 5px solid #94a3b8; border-top: none; border-radius: 0 0 24px 24px; position: relative; overflow: hidden; background: rgba(255,255,255,0.6); box-shadow: inset 0 -10px 20px rgba(0,0,0,0.05); }
+        .beaker-liquid { width: 100%; height: 65%; position: absolute; bottom: 0; left: 0; transition: all 0.8s ease; display: flex; justify-content: center; align-items: flex-end; }
+        .precipitate { width: 100%; height: 0%; transition: height 1s ease; border-radius: 0 0 18px 18px; }
+        .bubbles-container { position: absolute; bottom: 10px; width: 100%; height: 100%; pointer-events: none; }
+        .bubble { position: absolute; bottom: 0; background: rgba(255, 255, 255, 0.85); border: 1px solid #64748b; border-radius: 50%; animation: rise 1.8s infinite ease-in; }
+        @keyframes rise { 0% { transform: translateY(0) scale(0.8); opacity: 1; } 100% { transform: translateY(-125px) scale(1.3); opacity: 0; } }
+        .phenomenon-box { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px; border-radius: 8px; font-size: 0.92rem; line-height: 1.4; width: 100%; margin-top: auto; }
+
+        .steps-panel { display: flex; flex-direction: column; gap: 18px; }
+        .step-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; background: white; transition: all 0.3s; }
+        .step-card.active { border-color: var(--primary); box-shadow: 0 4px 15px rgba(15, 118, 110, 0.08); }
+        .step-card.locked { opacity: 0.5; pointer-events: none; background: #f8fafc; }
+        .step-card.completed { border-color: var(--success); background: #f0fdf4; }
+
+        .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .step-title { font-weight: 700; font-size: 1rem; color: var(--primary-dark); }
+        .step-status { font-size: 0.82rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+
+        .condition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+        .cond-btn { padding: 9px 12px; border: 2px solid #cbd5e1; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; font-size: 0.9rem; text-align: left; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .cond-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .cond-btn.correct { background: var(--success); color: white; border-color: var(--success); }
+        .cond-btn.wrong { background: var(--danger); color: white; border-color: var(--danger); }
+
+        .equation-workspace { background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #cbd5e1; margin-bottom: 10px; }
+        .eq-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 1.12rem; font-weight: 700; }
+        .coeff-input { width: 44px; height: 40px; text-align: center; font-size: 1.05rem; font-weight: bold; border: 2px solid #94a3b8; border-radius: 6px; background: white; color: var(--primary-dark); }
+        .formula-input { width: 130px; height: 40px; padding: 0 10px; font-size: 1rem; font-weight: bold; border: 2px solid #94a3b8; border-radius: 6px; background: white; }
+        .chem-text { padding: 0 3px; }
+        .arrow { font-size: 1.35rem; color: var(--accent); padding: 0 5px; }
+
+        .chem-helper { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+        .helper-label { font-size: 0.8rem; color: #64748b; }
+        .chip-btn { background: #e2e8f0; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 6px; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+        .chip-btn:hover { background: #cbd5e1; }
+
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer; }
+        .btn-check { background: var(--primary); color: white; }
+        .btn-hint { background: var(--accent-light); color: #92400e; border: 1px solid #fcd34d; }
+        .btn-show { background: #e2e8f0; color: #475569; }
+
+        .feedback-msg { margin-top: 10px; padding: 9px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: none; }
+        .feedback-msg.success { display: block; background: var(--success-bg); color: #166534; border: 1px solid #86efac; }
+        .feedback-msg.error { display: block; background: var(--danger-bg); color: #991b1b; border: 1px solid #fca5a5; }
+        .feedback-msg.hint { display: block; background: var(--accent-light); color: #92400e; border: 1px solid #fde68a; }
+
+        .student-footer { padding: 14px 24px; background: #f8fafc; border-top: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .btn-nav { background: #334155; color: white; padding: 9px 18px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; }
+        .btn-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-next-exp { background: var(--accent); color: white; }
+
+        /* ================= MODULE GIẢNG VIÊN ================= */
+        .teacher-module { padding: 24px; display: flex; flex-direction: column; gap: 24px; flex: 1; background: #f8fafc; }
+        .teacher-header-card { background: linear-gradient(135deg, #1e3a8a, #1d4ed8); color: white; padding: 20px 24px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .teacher-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .t-btn { padding: 9px 16px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+        .t-btn-light { background: white; color: #1e3a8a; }
+        .t-btn-danger { background: #fee2e2; color: #991b1b; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+        .stat-box { background: white; padding: 16px 18px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+        .stat-label { font-size: 0.83rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+        .stat-value { font-size: 1.45rem; font-weight: 800; color: var(--secondary); }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1.8fr 1fr; gap: 20px; }
+        @media (max-width: 960px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        .panel-box { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+        .panel-box h3 { font-size: 1.08rem; margin-bottom: 14px; color: #0f172a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+        table.xp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        table.xp-table th { background: #f1f5f9; color: #334155; text-align: left; padding: 10px 10px; font-weight: 700; border-bottom: 2px solid #cbd5e1; }
+        table.xp-table td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        .rank-badge { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; background: #e2e8f0; color: #334155; }
+        .rank-1 { background: #fef08a; color: #854d0e; border: 2px solid #eab308; }
+        .rank-2 { background: #e2e8f0; color: #1e293b; border: 2px solid #94a3b8; }
+        .rank-3 { background: #fed7aa; color: #9a3412; border: 2px solid #f97316; }
+
+        .fastest-tag { display: inline-block; background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-top: 4px; }
+        .submitted-tag { display: inline-block; background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+        .working-tag { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+
+        .exp-mini-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+        .mini-exp { width: 24px; height: 24px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #94a3b8; border: 1px solid #cbd5e1; }
+        .mini-exp.done { background: var(--success-bg); color: var(--success); border-color: #86efac; }
+        .mini-exp.partial { background: var(--accent-light); color: #92400e; border-color: #fcd34d; }
+
+        .bonus-btn { padding: 4px 8px; font-size: 0.76rem; font-weight: 700; border-radius: 6px; border: 1px solid transparent; cursor: pointer; margin-right: 3px; margin-bottom: 3px; }
+        .bonus-plus { background: #dcfce7; color: #166534; border-color: #86efac; }
+        .bonus-plus:hover { background: #bbf7d0; }
+        .bonus-minus { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .bonus-minus:hover { background: #fecaca; }
+
+        .log-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .log-item { padding: 10px 12px; background: #f8fafc; border-left: 4px solid var(--secondary); border-radius: 6px; font-size: 0.85rem; }
+        .log-time { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
+
+        .answer-key-box { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+        .key-card { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 0.88rem; line-height: 1.5; }
+
+        /* MODAL NỘP BÀI */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 15px; }
+        .modal-card { background: white; max-width: 480px; width: 100%; border-radius: 16px; padding: 28px; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .modal-card h3 { font-size: 1.35rem; margin-bottom: 10px; color: #0f172a; }
+        .modal-card p { font-size: 0.95rem; color: #475569; line-height: 1.5; margin-bottom: 20px; }
+        sub, sup { font-size: 0.75em; }
+        
+        .sync-status { font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
+        .sync-ok { background: #dcfce7; color: #16a34a; }
+        .sync-err { background: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <nav class="top-navbar">
+        <div class="brand">
+            <div class="brand-logo">⚗️</div>
+            <div class="brand-text">
+                <h1>HỆ THỐNG HỌC TẬP: PHẢN ỨNG TRONG DUNG DỊCH CHẤT ĐIỆN LY</h1>
+                <p>Chương 9 (Mục 5) – Bộ môn Hóa học | Trường Cao đẳng Dược Trung ương Hải Dương</p>
+            </div>
+        </div>
+        <div class="module-tabs">
+            <button class="tab-btn active-student" id="tab-student-btn" onclick="switchModule('student')">
+                👨‍🎓 Module Sinh Viên <span id="nav-current-group-badge" style="background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:10px; font-size:0.8rem;">Chưa đăng nhập</span>
+            </button>
+            <button class="tab-btn" id="tab-teacher-btn" onclick="switchModule('teacher')">
+                👩‍🏫 Module Giảng Viên
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODULE 1: SINH VIÊN -->
+    <div id="student-module" style="display: flex; flex-direction: column; flex: 1;">
+        <!-- Đăng nhập -->
+        <div id="student-login-view" class="login-screen">
+            <div class="login-card">
+                <h2>🔐 Đăng Nhập Nhóm Học Tập</h2>
+                <p class="sub">Nhập tên nhóm của bạn để bắt đầu thực hiện nhiệm vụ thí nghiệm, tích lũy điểm XP và nộp bài.</p>
+
+                <div class="speed-bonus-banner">
+                    <span>⚡</span>
+                    <div><strong>Thưởng Tốc Độ (+10 XP):</strong> Đội nào hoàn thành nhiệm vụ và bấm <strong>Nộp bài</strong> với thời gian nhanh nhất sẽ được thưởng thêm <strong>+10 XP</strong>!</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="group-name-input">Tên Nhóm (Ví dụ: Nhóm 1, Nhóm 2...):</label>
+                    <input type="text" id="group-name-input" class="text-input" placeholder="Nhập tên nhóm của bạn (VD: Nhóm 1)...">
+                </div>
+
+                <div class="form-group">
+                    <label for="group-members-input">Tên đại diện / Thành viên (Tùy chọn):</label>
+                    <input type="text" id="group-members-input" class="text-input" placeholder="VD: Nguyễn Văn A, Trần Thị B...">
+                </div>
+
+                <button class="btn-login-submit" onclick="handleGroupLogin()">🚀 Vào Phòng Thí Nghiệm & Bắt Đầu Tính Giờ</button>
+            </div>
+        </div>
+
+        <!-- Làm thí nghiệm -->
+        <div id="student-game-view" class="hidden" style="display: flex; flex-direction: column; flex: 1;">
+            <div class="student-bar">
+                <div class="student-identity">
+                    <div class="group-pill">
+                        👥 <span id="active-group-name">Nhóm 1</span>
+                    </div>
+                    <div class="xp-pill">
+                        ⭐ Tổng điểm: <span id="active-group-xp">0</span> XP
+                    </div>
+                    <div class="timer-pill" title="Thời gian làm bài của nhóm">
+                        ⏱️ <span id="active-group-timer">00:00</span>
+                    </div>
+                    <button class="btn-submit-assignment" id="top-submit-btn" onclick="openSubmitModal()">
+                        📥 Nộp Bài Của Nhóm
+                    </button>
+                    <button class="btn-switch-group" onclick="logoutGroup()">🔄 Thoát/Đổi Nhóm</button>
+                </div>
+
+                <div class="nav-pills" id="student-nav-pills"></div>
+            </div>
+
+            <!-- Thông báo nếu nhóm đã nộp bài -->
+            <div id="submitted-banner" class="submitted-notice hidden">
+                <span id="submitted-banner-text">✅ Nhóm của bạn đã nộp bài! Điểm và thời gian đã được ghi nhận trên hệ thống Giảng viên.</span>
+                <button class="btn-switch-group" onclick="reopenWorkForGroup()">✏️ Mở khóa làm tiếp / Nộp lại</button>
+            </div>
+
+            <div class="student-workspace">
+                <!-- Cột trái: Ống nghiệm ảo -->
+                <div class="lab-panel">
+                    <span class="exp-tag" id="exp-tag">Thí nghiệm 1 / 7</span>
+                    <div class="exp-title" id="exp-title">AgNO₃ + Na₂CrO₄</div>
+
+                    <div class="beaker-stage">
+                        <div class="beaker">
+                            <div class="beaker-liquid" id="beaker-liquid">
+                                <div class="precipitate" id="beaker-precipitate"></div>
+                                <div class="bubbles-container" id="beaker-bubbles"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phenomenon-box" id="phenomenon-box">
+                        <strong>🔎 Hiện tượng quan sát:</strong><br>
+                        Xuất hiện kết tủa màu đỏ gạch dưới đáy cốc.
+                    </div>
+                </div>
+
+                <!-- Cột phải: 3 Bước tương tác -->
+                <div class="steps-panel">
+                    <!-- Bước 1 -->
+                    <div class="step-card active" id="step1-card">
+                        <div class="step-header">
+                            <div class="step-title">1️⃣ Bước 1: Nhận diện điều kiện phản ứng xảy ra (+10 XP)</div>
+                            <span class="step-status" id="step1-status">Đang thực hiện</span>
+                        </div>
+                        <div class="condition-grid" id="condition-grid"></div>
+                        <div class="feedback-msg" id="step1-feedback"></div>
+                    </div>
+
+                    <!-- Bước 2 -->
+                    <div class="step-card locked" id="step2-card">
+                        <div class="step-header">
+                            <div class="step-title">2️⃣ Bước 2: Tự viết sản phẩm & Cân bằng phương trình phân tử (+20 XP)</div>
+                            <span class="step-status" id="step2-status">Chưa mở khóa</span>
+                        </div>
+                        <p style="font-size: 0.86rem; color: #475569; margin-bottom: 8px;">
+                            Điền hệ số (ô nhỏ, để trống nếu bằng 1) và gõ công thức sản phẩm (ô rộng, ví dụ: <code>Ag2CrO4</code>, <code>NaNO3</code>):
+                        </p>
+                        <div class="equation-workspace">
+                            <div class="eq-row" id="mol-eq-row"></div>
+                            <div class="chem-helper" id="chem-helper"></div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-check" onclick="checkStep2()">✔️ Kiểm tra Phương trình</button>
+                            <button class="btn btn-hint" onclick="showHintStep2()">💡 Gợi ý sản phẩm</button>
+                            <button class="btn btn-show" onclick="revealStep2()">👁️ Xem đáp án (0 XP)</button>
+                        </div>
+                        <div class="feedback-msg" id="step2-feedback"></div>
+                    </div>
+
+                    <!-- Bước 3 -->
+                    <div class="step-card locked" id="step3-card">
+                        <div class="step-header">
+                            <div class="step-title">3️⃣ Bước 3: Cân bằng phương trình ion rút gọn (+20 XP)</div>
+                            <span class="step-status" id="step3-status">Chưa mở khóa</span>
+                        </div>
+                        <div class="equation-workspace">
+                            <div class="eq-row" id="ionic-eq-row"></div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-check" onclick="checkStep3()">✔️ Kiểm tra Ion rút gọn</button>
+                            <button class="btn btn-show" onclick="revealStep3()">👁️ Xem đáp án (0 XP)</button>
+                        </div>
+                        <div class="feedback-msg" id="step3-feedback"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="student-footer">
+                <button class="btn-nav" id="prev-btn" onclick="prevExp()">⬅️ Thí nghiệm trước</button>
+                <div style="display:flex; align-items:center; gap: 12px; flex-wrap:wrap;">
+                    <span style="font-size: 0.88rem; font-weight: 600; color: #475569;">
+                        Bạn có thể nộp bài bất cứ lúc nào (dù đã làm xong hay chưa):
+                    </span>
+                    <button class="btn-submit-assignment" id="bottom-submit-btn" onclick="openSubmitModal()">
+                        📥 Nộp Bài Của Nhóm
+                    </button>
+                </div>
+                <button class="btn-nav btn-next-exp" id="next-btn" onclick="nextExp()">Thí nghiệm tiếp theo ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE 2: GIẢNG VIÊN -->
+    <div id="teacher-module" class="teacher-module hidden">
+        <div class="teacher-header-card">
+            <div>
+                <h2 style="font-size: 1.35rem; margin-bottom: 4px;">👩‍🏫 Bảng Điều Khiển Giảng Viên (Google Sheets Sync)</h2>
+                <p style="font-size: 0.9rem; opacity: 0.9;">
+                    <span id="sync-status" class="sync-status sync-ok">Đang làm mới dữ liệu...</span>
+                </p>
+            </div>
+            <div class="teacher-actions">
+                <button class="t-btn t-btn-light" onclick="toggleAnswerKey()">📖 Bật/Tắt Đáp Án Chuẩn</button>
+                <button class="t-btn t-btn-danger" onclick="resetAllData()">🗑️ Xóa toàn bộ dữ liệu lớp</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Số nhóm tham gia / Đã nộp bài</div>
+                <div class="stat-value" id="stat-total-groups">0 / 0 nhóm</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Nhóm dẫn đầu XP hiện tại</div>
+                <div class="stat-value" id="stat-top-group" style="color: var(--accent);">Chưa có</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">⚡ Đội hoàn thành nhanh nhất (+10 XP)</div>
+                <div class="stat-value" id="stat-fastest-group" style="color: var(--success);">Chưa có</div>
+            </div>
+        </div>
+
+        <div id="teacher-answer-key" class="panel-box hidden" style="border: 2px solid var(--secondary);">
+            <h3>📌 Tổng Hợp 5 Điều Kiện & Các Phương Trình Phản Ứng Chuẩn</h3>
+            <div class="answer-key-box" id="answer-key-content"></div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="panel-box">
+                <h3>🏆 Bảng Xếp Hạng Tích Lũy XP Các Nhóm</h3>
+                <div style="overflow-x: auto;">
+                    <table class="xp-table">
+                        <thead>
+                            <tr>
+                                <th>Hạng</th>
+                                <th>Tên Nhóm</th>
+                                <th>Trạng thái & Thời gian</th>
+                                <th>Tổng XP</th>
+                                <th>Tiến độ 7 TN</th>
+                                <th>Thưởng Nhận xét chéo / Điều chỉnh</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <h3>⏱️ Nhật Ký Hoạt Động & Nộp Bài</h3>
+                <div class="log-list" id="activity-log-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NỘP BÀI -->
+<div id="submit-modal" class="modal-overlay hidden">
+    <div class="modal-card" id="submit-modal-content"></div>
+</div>
+
+<script>
+    // ==========================================
+    // CẤU HÌNH GOOGLE APPS SCRIPT (CẤY LINK CỦA BẠN VÀO ĐÂY)
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzM24zr5ZI1qlhYGJyUo1C5JrTkwM8ZBwN3-Oele9gyTSJFE_Iawz7bR9ZW6anx2mmE/exec";
+    
+    let isFetching = false;
+    
+    // ==========================================
+    // DỮ LIỆU HÓA HỌC CHUẨN
+    // ==========================================
+    const CONDITIONS = [
+        { id: "5.1", label: "5.1. Tạo thành chất ít tan (kết tủa)" },
+        { id: "5.2", label: "5.2. Tạo thành chất điện ly yếu" },
+        { id: "5.3", label: "5.3. Tạo thành chất dễ bay hơi (khí)" },
+        { id: "5.4", label: "5.4. Tạo thành phức chất" },
+        { id: "5.5", label: "5.5. Phản ứng oxy hóa – khử" }
+    ];
+
+    const EXPERIMENTS = [
+        {
+            id: 1, assignedGroupHint: "Nhóm 1",
+            title: "Nhỏ dung dịch AgNO₃ vào dung dịch Na₂CrO₄",
+            phenomenon: "Xuất hiện kết tủa màu đỏ gạch (Ag₂CrO₄↓) lắng xuống đáy cốc.",
+            visual: { liquidColor: "rgba(254, 240, 138, 0.45)", precipColor: "#b91c1c", precipHeight: "28%", bubbles: false },
+            conditionId: "5.1",
+            conditionExplain: "Phản ứng trao đổi ion tạo thành Bạc cromat (Ag₂CrO₄↓) là chất kết tủa ít tan màu đỏ gạch.",
+            reactants: [ { coeff: 2, formula: "AgNO3", display: "AgNO<sub>3</sub>" }, { coeff: 1, formula: "Na2CrO4", display: "Na<sub>2</sub>CrO<sub>4</sub>" } ],
+            products: [ { coeff: 1, formula: "Ag2CrO4", display: "Ag<sub>2</sub>CrO<sub>4</sub>↓" }, { coeff: 2, formula: "NaNO3", display: "NaNO<sub>3</sub>" } ],
+            hintProducts: "Hai sản phẩm tạo thành là kết tủa Bạc cromat (Ag2CrO4) và muối Natri nitrat (NaNO3).",
+            chipSuggestions: ["Ag2CrO4", "NaNO3", "AgCrO4", "Na2NO3"],
+            ionicReactants: [ { coeff: 2, display: "Ag<sup>+</sup>" }, { coeff: 1, display: "CrO<sub>4</sub><sup>2-</sup>" } ],
+            ionicProducts: [ { coeff: 1, display: "Ag<sub>2</sub>CrO<sub>4</sub>↓" } ],
+            fullMolText: "2AgNO₃ + Na₂CrO₄ → Ag₂CrO₄↓ + 2NaNO₃", fullIonText: "2Ag⁺ + CrO₄²⁻ → Ag₂CrO₄↓"
+        },
+        {
+            id: 2, assignedGroupHint: "Nhóm 1",
+            title: "Cho dung dịch HCl tác dụng với dung dịch KOH",
+            phenomenon: "Dung dịch trong suốt, phản ứng trung hòa tỏa nhiệt nhẹ, tạo thành nước.",
+            visual: { liquidColor: "rgba(186, 230, 253, 0.35)", precipColor: "transparent", precipHeight: "0%", bubbles: false },
+            conditionId: "5.2",
+            conditionExplain: "Phản ứng giữa acid mạnh và base mạnh tạo thành H₂O là chất điện ly rất yếu.",
+            reactants: [ { coeff: 1, formula: "HCl", display: "HCl" }, { coeff: 1, formula: "KOH", display: "KOH" } ],
+            products: [ { coeff: 1, formula: "KCl", display: "KCl" }, { coeff: 1, formula: "H2O", display: "H<sub>2</sub>O" } ],
+            hintProducts: "Phản ứng trung hòa giữa acid HCl và base KOH tạo ra muối Kali clorid (KCl) và Nước (H2O).",
+            chipSuggestions: ["KCl", "H2O", "KOH", "Cl2"],
+            ionicReactants: [ { coeff: 1, display: "H<sup>+</sup>" }, { coeff: 1, display: "OH<sup>-</sup>" } ],
+            ionicProducts: [ { coeff: 1, display: "H<sub>2</sub>O" } ],
+            fullMolText: "HCl + KOH → KCl + H₂O", fullIonText: "H⁺ + OH⁻ → H₂O"
+        },
+        {
+            id: 3, assignedGroupHint: "Nhóm 2",
+            title: "Nhỏ từ từ dung dịch HCl vào dung dịch Na₂CO₃",
+            phenomenon: "Sủi bọt khí không màu, không mùi (CO₂↑) thoát ra mạnh khỏi dung dịch.",
+            visual: { liquidColor: "rgba(224, 242, 254, 0.4)", precipColor: "transparent", precipHeight: "0%", bubbles: true },
+            conditionId: "5.3",
+            conditionExplain: "Phản ứng tạo ra H₂CO₃ kém bền, phân hủy ngay thành khí CO₂↑ dễ bay hơi và nước.",
+            reactants: [ { coeff: 1, formula: "Na2CO3", display: "Na<sub>2</sub>CO<sub>3</sub>" }, { coeff: 2, formula: "HCl", display: "HCl" } ],
+            products: [ { coeff: 2, formula: "NaCl", display: "NaCl" }, { coeff: 1, formula: "CO2", display: "CO<sub>2</sub>↑" }, { coeff: 1, formula: "H2O", display: "H<sub>2</sub>O" } ],
+            hintProducts: "Ba sản phẩm gồm: muối ăn (NaCl), khí Carbon dioxyd (CO2) và Nước (H2O).",
+            chipSuggestions: ["NaCl", "CO2", "H2O", "NaHCO3"],
+            ionicReactants: [ { coeff: 1, display: "CO<sub>3</sub><sup>2-</sup>" }, { coeff: 2, display: "H<sup>+</sup>" } ],
+            ionicProducts: [ { coeff: 1, display: "CO<sub>2</sub>↑" }, { coeff: 1, display: "H<sub>2</sub>O" } ],
+            fullMolText: "Na₂CO₃ + 2HCl → 2NaCl + CO₂↑ + H₂O", fullIonText: "CO₃²⁻ + 2H⁺ → CO₂↑ + H₂O"
+        },
+        {
+            id: 4, assignedGroupHint: "Nhóm 2",
+            title: "Cho dung dịch NH₃ dư vào dung dịch CuSO₄",
+            phenomenon: "Dung dịch chuyển sang màu xanh lam thẫm đặc trưng của phức chất đồng - amoniac.",
+            visual: { liquidColor: "rgba(29, 78, 216, 0.75)", precipColor: "transparent", precipHeight: "0%", bubbles: false },
+            conditionId: "5.4",
+            conditionExplain: "Ion Cu²⁺ kết hợp với phối tử NH₃ tạo thành ion phức [Cu(NH₃)₄]²⁺ bền vững có màu xanh thẫm.",
+            reactants: [ { coeff: 1, formula: "CuSO4", display: "CuSO<sub>4</sub>" }, { coeff: 4, formula: "NH3", display: "NH<sub>3</sub>" } ],
+            products: [ { coeff: 1, formula: "[Cu(NH3)4]SO4", display: "[Cu(NH<sub>3</sub>)<sub>4</sub>]SO<sub>4</sub>" } ],
+            hintProducts: "Sản phẩm duy nhất là phức chất Đồng(II) tetraamino sulfat: [Cu(NH3)4]SO4.",
+            chipSuggestions: ["[Cu(NH3)4]SO4", "Cu(OH)2", "(NH4)2SO4"],
+            ionicReactants: [ { coeff: 1, display: "Cu<sup>2+</sup>" }, { coeff: 4, display: "NH<sub>3</sub>" } ],
+            ionicProducts: [ { coeff: 1, display: "[Cu(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup>" } ],
+            fullMolText: "CuSO₄ + 4NH₃ → [Cu(NH₃)₄]SO₄", fullIonText: "Cu²⁺ + 4NH₃ → [Cu(NH₃)₄]²⁺"
+        },
+        {
+            id: 5, assignedGroupHint: "Nhóm 3",
+            title: "Cho dung dịch CH₃COOH tác dụng với dung dịch NaOH",
+            phenomenon: "Dung dịch đồng nhất, phản ứng giữa acid yếu và base mạnh tạo muối và nước.",
+            visual: { liquidColor: "rgba(204, 251, 241, 0.4)", precipColor: "transparent", precipHeight: "0%", bubbles: false },
+            conditionId: "5.2",
+            conditionExplain: "Phản ứng giữa acid yếu (CH₃COOH) và base mạnh (NaOH) tạo ra chất điện ly rất yếu là H₂O.",
+            reactants: [ { coeff: 1, formula: "CH3COOH", display: "CH<sub>3</sub>COOH" }, { coeff: 1, formula: "NaOH", display: "NaOH" } ],
+            products: [ { coeff: 1, formula: "CH3COONa", display: "CH<sub>3</sub>COONa" }, { coeff: 1, formula: "H2O", display: "H<sub>2</sub>O" } ],
+            hintProducts: "Hai sản phẩm là muối Natri acetat (CH3COONa) và Nước (H2O).",
+            chipSuggestions: ["CH3COONa", "H2O", "CH3COO-"],
+            ionicReactants: [ { coeff: 1, display: "CH<sub>3</sub>COOH" }, { coeff: 1, display: "OH<sup>-</sup>" } ],
+            ionicProducts: [ { coeff: 1, display: "CH<sub>3</sub>COO<sup>-</sup>" }, { coeff: 1, display: "H<sub>2</sub>O" } ],
+            fullMolText: "CH₃COOH + NaOH → CH₃COONa + H₂O", fullIonText: "CH₃COOH + OH⁻ → CH₃COO⁻ + H₂O"
+        },
+        {
+            id: 6, assignedGroupHint: "Nhóm 3",
+            title: "Nhỏ dung dịch KMnO₄ vào hỗn hợp H₂O₂ và H₂SO₄ loãng",
+            phenomenon: "Màu tím của KMnO₄ nhạt dần rồi mất hẳn, đồng thời sủi bọt khí O₂↑ mạnh.",
+            visual: { liquidColor: "rgba(243, 232, 255, 0.5)", precipColor: "transparent", precipHeight: "0%", bubbles: true },
+            conditionId: "5.5",
+            conditionExplain: "Có sự trao đổi electron giữa chất oxy hóa KMnO₄ (Mn⁺⁷ → Mn⁺²) và chất khử H₂O₂ (O⁻¹ → O⁰).",
+            reactants: [ { coeff: 2, formula: "KMnO4", display: "KMnO<sub>4</sub>" }, { coeff: 5, formula: "H2O2", display: "H<sub>2</sub>O<sub>2</sub>" }, { coeff: 3, formula: "H2SO4", display: "H<sub>2</sub>SO<sub>4</sub>" } ],
+            products: [ { coeff: 1, formula: "K2SO4", display: "K<sub>2</sub>SO<sub>4</sub>" }, { coeff: 2, formula: "MnSO4", display: "MnSO<sub>4</sub>" }, { coeff: 8, formula: "H2O", display: "H<sub>2</sub>O" }, { coeff: 5, formula: "O2", display: "O<sub>2</sub>↑" } ],
+            hintProducts: "4 sản phẩm gồm: K2SO4, MnSO4, H2O và khí O2 (Hệ số chất đầu: 2 KMnO4 : 5 H2O2 : 3 H2SO4).",
+            chipSuggestions: ["K2SO4", "MnSO4", "H2O", "O2"],
+            ionicReactants: [ { coeff: 2, display: "MnO<sub>4</sub><sup>-</sup>" }, { coeff: 5, display: "H<sub>2</sub>O<sub>2</sub>" }, { coeff: 6, display: "H<sup>+</sup>" } ],
+            ionicProducts: [ { coeff: 2, display: "Mn<sup>2+</sup>" }, { coeff: 8, display: "H<sub>2</sub>O" }, { coeff: 5, display: "O<sub>2</sub>↑" } ],
+            fullMolText: "2KMnO₄ + 5H₂O₂ + 3H₂SO₄ → K₂SO₄ + 2MnSO₄ + 8H₂O + 5O₂↑", fullIonText: "2MnO₄⁻ + 5H₂O₂ + 6H⁺ → 2Mn²⁺ + 8H₂O + 5O₂↑"
+        },
+        {
+            id: 7, assignedGroupHint: "Cả lớp",
+            title: "Cho dung dịch HCl tác dụng với dung dịch NH₃",
+            phenomenon: "Dung dịch trong suốt, phản ứng giữa acid mạnh và base yếu tạo muối amoni.",
+            visual: { liquidColor: "rgba(241, 245, 249, 0.6)", precipColor: "transparent", precipHeight: "0%", bubbles: false },
+            conditionId: "5.2",
+            conditionExplain: "Phản ứng giữa acid mạnh (HCl) và base yếu (NH₃) thuộc nhóm tạo chất ít điện ly.",
+            reactants: [ { coeff: 1, formula: "HCl", display: "HCl" }, { coeff: 1, formula: "NH3", display: "NH<sub>3</sub>" } ],
+            products: [ { coeff: 1, formula: "NH4Cl", display: "NH<sub>4</sub>Cl" } ],
+            hintProducts: "Sản phẩm duy nhất là muối Amoni clorid (NH4Cl).",
+            chipSuggestions: ["NH4Cl", "NH4+", "Cl-"],
+            ionicReactants: [ { coeff: 1, display: "H<sup>+</sup>" }, { coeff: 1, display: "NH<sub>3</sub>" } ],
+            ionicProducts: [ { coeff: 1, display: "NH<sub>4</sub><sup>+</sup>" } ],
+            fullMolText: "HCl + NH₃ → NH₄Cl", fullIonText: "H⁺ + NH₃ → NH₄⁺"
+        }
+    ];
+
+    // ==========================================
+    // TRẠNG THÁI ỨNG DỤNG VÀ GOOGLE SHEETS SYNC
+    // ==========================================
+    let appData = { groups: {}, fastestGroupKey: null, logs: [] };
+    let currentGroupKey = null;
+    let currentExpIndex = 0;
+    let lastFocusedFormulaInput = null;
+    let timerInterval = null;
+
+    // Load data from Google Sheets API
+    async function loadFromGoogleSheets() {
+        if(GAS_URL === "DÁN_LINK_GOOGLE_APPS_SCRIPT_CỦA_BẠN_VÀO_ĐÂY") return; // Chưa gắn link thì bỏ qua
+        if(isFetching) return;
+        isFetching = true;
+        try {
+            let res = await fetch(GAS_URL);
+            let data = await res.json();
+            if(data && Object.keys(data).length > 0) {
+                appData = data;
+                if (!appData.groups) appData.groups = {};
+                if (!appData.logs) appData.logs = [];
+                
+                const syncStt = document.getElementById('sync-status');
+                if(syncStt) { syncStt.innerText = "Đã đồng bộ ✓"; syncStt.className = "sync-status sync-ok"; }
+                
+                // Update views
+                const tMod = document.getElementById('teacher-module');
+                if (tMod && !tMod.classList.contains('hidden')) renderTeacherDashboard();
+                const sMod = document.getElementById('student-game-view');
+                if (sMod && !sMod.classList.contains('hidden')) updateStudentTopBar();
+            }
+        } catch(e) { 
+            console.error("Fetch error:", e);
+            const syncStt = document.getElementById('sync-status');
+            if(syncStt) { syncStt.innerText = "Lỗi kết nối ✖"; syncStt.className = "sync-status sync-err"; }
+        }
+        isFetching = false;
+    }
+
+    // Gửi data lên Google Sheets (Dùng no-cors để tránh bị trình duyệt chặn)
+    function saveToGoogleSheets() {
+        if(GAS_URL === "DÁN_LINK_GOOGLE_APPS_SCRIPT_CỦA_BẠN_VÀO_ĐÂY") return;
+        
+        fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appData)
+        }).catch(error => console.error("Lỗi khi lưu lên GAS:", error));
+
+        // Cập nhật giao diện cục bộ luôn không cần chờ response
+        renderTeacherDashboard();
+        updateStudentTopBar();
+    }
+
+    function addLog(message) {
+        const now = new Date();
+        const timeStr = now.toTimeString().slice(0, 8);
+        appData.logs.unshift({ time: timeStr, text: message });
+        if (appData.logs.length > 50) appData.logs.pop();
+        saveToGoogleSheets();
+    }
+
+    function formatDuration(sec) {
+        if (sec === null || sec === undefined) return "--:--";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function countCompletedExps(grp) {
+        let count = 0;
+        EXPERIMENTS.forEach(e => {
+            const p = grp.progress[e.id];
+            if (p && p.s1 && p.s2 && p.s3) count++;
+        });
+        return count;
+    }
+
+    function evaluateFastestTeamBonus() {
+        const allGroups = Object.values(appData.groups);
+        const submittedGroups = allGroups.filter(g => g.submitted && g.durationSec !== null);
+        
+        if (submittedGroups.length === 0) {
+            allGroups.forEach(g => {
+                if (g.hasFastestBonus) {
+                    g.xp = Math.max(0, g.xp - 10);
+                    g.hasFastestBonus = false;
+                }
+            });
+            appData.fastestGroupKey = null;
+            return;
+        }
+
+        let qualified = submittedGroups.filter(g => countCompletedExps(g) >= 2);
+        if (qualified.length === 0) qualified = submittedGroups.filter(g => countCompletedExps(g) >= 1);
+        if (qualified.length === 0) return;
+
+        qualified.sort((a, b) => a.durationSec - b.durationSec);
+        const winner = qualified[0];
+
+        if (appData.fastestGroupKey !== winner.name) {
+            if (appData.fastestGroupKey && appData.groups[appData.fastestGroupKey] && appData.groups[appData.fastestGroupKey].hasFastestBonus) {
+                appData.groups[appData.fastestGroupKey].xp = Math.max(0, appData.groups[appData.fastestGroupKey].xp - 10);
+                appData.groups[appData.fastestGroupKey].hasFastestBonus = false;
+            }
+            winner.xp += 10;
+            winner.hasFastestBonus = true;
+            appData.fastestGroupKey = winner.name;
+            addLog(`⚡ <strong>${winner.name}</strong> đạt danh hiệu <strong>Đội làm xong nhanh nhất</strong> (${formatDuration(winner.durationSec)}) và nhận thưởng <strong>+10 XP</strong>!`);
+        }
+    }
+
+    function startStudentTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (!currentGroupKey || !appData.groups[currentGroupKey]) return;
+            const grp = appData.groups[currentGroupKey];
+            const timerEl = document.getElementById('active-group-timer');
+            if (!timerEl) return;
+
+            if (grp.submitted && grp.durationSec !== null) {
+                timerEl.innerText = `${formatDuration(grp.durationSec)} (Đã nộp)`;
+            } else {
+                const elapsed = Math.floor((Date.now() - grp.startTime) / 1000);
+                timerEl.innerText = formatDuration(elapsed);
+            }
+        }, 1000);
+    }
+
+    function switchModule(mod) {
+        const sMod = document.getElementById('student-module');
+        const tMod = document.getElementById('teacher-module');
+        const sBtn = document.getElementById('tab-student-btn');
+        const tBtn = document.getElementById('tab-teacher-btn');
+
+        if (mod === 'student') {
+            sMod.classList.remove('hidden');
+            tMod.classList.add('hidden');
+            sBtn.classList.add('active-student');
+            tBtn.classList.remove('active-teacher');
+        } else {
+            sMod.classList.add('hidden');
+            tMod.classList.remove('hidden');
+            sBtn.classList.remove('active-student');
+            tBtn.classList.add('active-teacher');
+            renderTeacherDashboard();
+        }
+    }
+
+    function handleGroupLogin() {
+        const nameInput = document.getElementById('group-name-input').value.trim();
+        const membersInput = document.getElementById('group-members-input').value.trim();
+
+        if (!nameInput) {
+            alert("Vui lòng nhập tên nhóm của bạn (ví dụ: Nhóm 1, Nhóm 2...)!");
+            document.getElementById('group-name-input').focus();
+            return;
+        }
+
+        currentGroupKey = nameInput;
+
+        if (!appData.groups[currentGroupKey]) {
+            appData.groups[currentGroupKey] = {
+                name: currentGroupKey,
+                members: membersInput || "Đại diện nhóm",
+                xp: 0,
+                progress: {},
+                startTime: Date.now(),
+                submitted: false,
+                submitTimeStr: null,
+                durationSec: null,
+                hasFastestBonus: false
+            };
+            addLog(`👥 <strong>${currentGroupKey}</strong> đã đăng nhập và bắt đầu tính giờ làm bài.`);
+            saveToGoogleSheets();
+        } else {
+            if (membersInput) appData.groups[currentGroupKey].members = membersInput;
+            saveToGoogleSheets();
+        }
+
+        const lower = currentGroupKey.toLowerCase();
+        if (lower.includes("1")) currentExpIndex = 0;
+        else if (lower.includes("2")) currentExpIndex = 2;
+        else if (lower.includes("3")) currentExpIndex = 4;
+        else currentExpIndex = 0;
+
+        document.getElementById('student-login-view').classList.add('hidden');
+        document.getElementById('student-game-view').classList.remove('hidden');
+
+        startStudentTimer();
+        updateStudentTopBar();
+        loadExperiment(currentExpIndex);
+    }
+
+    function logoutGroup() {
+        document.getElementById('student-game-view').classList.add('hidden');
+        document.getElementById('student-login-view').classList.remove('hidden');
+        document.getElementById('group-name-input').value = '';
+        document.getElementById('group-members-input').value = '';
+        currentGroupKey = null;
+        updateStudentTopBar();
+    }
+
+    function openSubmitModal() {
+        if (!currentGroupKey || !appData.groups[currentGroupKey]) return;
+        const grp = appData.groups[currentGroupKey];
+        const doneCount = countCompletedExps(grp);
+
+        let partialSteps = 0;
+        EXPERIMENTS.forEach(e => {
+            const p = grp.progress[e.id] || {};
+            if (p.s1) partialSteps++;
+            if (p.s2) partialSteps++;
+            if (p.s3) partialSteps++;
+        });
+
+        const elapsedSec = grp.submitted && grp.durationSec !== null ? grp.durationSec : Math.floor((Date.now() - grp.startTime) / 1000);
+        const modal = document.getElementById('submit-modal');
+        const content = document.getElementById('submit-modal-content');
+
+        const statusWarning = doneCount === 0
+            ? `<div style="background:#fef3c7; color:#92400e; padding:10px; border-radius:8px; font-size:0.88rem; margin-bottom:15px;">
+                 ⚠️ Nhóm bạn chưa hoàn thành trọn vẹn thí nghiệm nào (mới làm ${partialSteps} bước). Bạn vẫn có thể nộp bài ngay nếu muốn!
+               </div>`
+            : `<div style="background:#dcfce7; color:#166534; padding:10px; border-radius:8px; font-size:0.88rem; margin-bottom:15px;">
+                 ✅ Nhóm bạn đã hoàn thành trọn vẹn <strong>${doneCount} thí nghiệm</strong> (${partialSteps} bước).
+               </div>`;
+
+        content.innerHTML = `
+            <div style="font-size: 2.8rem; margin-bottom: 8px;">📥</div>
+            <h3>Xác Nhận Nộp Bài – ${grp.name}</h3>
+            <p>Dù đã hoàn thành hết hay mới làm một phần, kết quả và điểm XP sẽ được gửi ngay về Bảng điều khiển Giảng viên.</p>
+            ${statusWarning}
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px; margin-bottom:20px; text-align:left; font-size:0.92rem; line-height:1.6;">
+                • <strong>Điểm tích lũy hiện tại:</strong> <span style="color:#d97706; font-weight:800;">${grp.xp} XP</span><br>
+                • <strong>Thời gian làm bài:</strong> <strong>${formatDuration(elapsedSec)}</strong><br>
+                • <strong>Số thí nghiệm hoàn tất:</strong> ${doneCount} / ${EXPERIMENTS.length} TN
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn btn-show" onclick="closeSubmitModal()">Quay lại làm tiếp</button>
+                <button class="btn btn-check" style="background:#dc2626;" onclick="confirmSubmitGroup()">🚀 Xác Nhận Nộp Bài Ngay</button>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    }
+
+    function closeSubmitModal() {
+        document.getElementById('submit-modal').classList.add('hidden');
+    }
+
+    function confirmSubmitGroup() {
+        if (!currentGroupKey || !appData.groups[currentGroupKey]) return;
+        const grp = appData.groups[currentGroupKey];
+
+        const now = new Date();
+        grp.submitted = true;
+        grp.submitTimeStr = now.toTimeString().slice(0, 8);
+        grp.durationSec = Math.floor((Date.now() - grp.startTime) / 1000);
+
+        const doneCount = countCompletedExps(grp);
+        addLog(`📥 <strong>${grp.name}</strong> đã <strong>NỘP BÀI</strong> (Hoàn thành ${doneCount} TN | Thời gian: ${formatDuration(grp.durationSec)} | Điểm: ${grp.xp} XP).`);
+
+        evaluateFastestTeamBonus();
+        saveToGoogleSheets();
+
+        const content = document.getElementById('submit-modal-content');
+        const bonusNote = grp.hasFastestBonus
+            ? `<div style="background:#fef3c7; border:2px solid #f59e0b; color:#92400e; padding:12px; border-radius:10px; font-weight:700; margin-bottom:16px;">
+                 ⚡ CHÚC MỪNG! ${grp.name} đang là <strong>Đội hoàn thành nhanh nhất</strong> và được cộng thưởng <strong>+10 XP</strong>!
+               </div>`
+            : '';
+
+        content.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 8px;">🎉</div>
+            <h3>Đã Nộp Bài Thành Công!</h3>
+            <p>Kết quả của <strong>${grp.name}</strong> đã được ghi nhận vào hệ thống của Giảng viên.</p>
+            ${bonusNote}
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:14px; margin-bottom:20px; font-size:0.95rem;">
+                ⭐ Tổng điểm XP của nhóm: <strong style="font-size:1.25rem; color:#15803d;">${grp.xp} XP</strong><br>
+                ⏱️ Thời gian ghi nhận: <strong>${formatDuration(grp.durationSec)}</strong>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn btn-show" onclick="closeSubmitModal()">Xem lại bài</button>
+                <button class="btn btn-check" onclick="closeSubmitModal(); logoutGroup();">🔄 Thoát để nhóm khác làm</button>
+            </div>
+        `;
+        loadExperiment(currentExpIndex);
+    }
+
+    function reopenWorkForGroup() {
+        if (!currentGroupKey || !appData.groups[currentGroupKey]) return;
+        const grp = appData.groups[currentGroupKey];
+        grp.submitted = false;
+        addLog(`✏️ <strong>${grp.name}</strong> đã mở khóa để chỉnh sửa / làm tiếp bài.`);
+        evaluateFastestTeamBonus();
+        saveToGoogleSheets();
+        loadExperiment(currentExpIndex);
+    }
+
+    function getGroupProgress(expId) {
+        if (!currentGroupKey || !appData.groups[currentGroupKey]) return { s1: false, s2: false, s3: false };
+        const prog = appData.groups[currentGroupKey].progress[expId];
+        return prog || { s1: false, s2: false, s3: false };
+    }
+
+    function setGroupStepDone(expId, stepNum, points) {
+        if (!currentGroupKey || !appData.groups[currentGroupKey]) return;
+        const grp = appData.groups[currentGroupKey];
+        if (!grp.progress[expId]) grp.progress[expId] = { s1: false, s2: false, s3: false };
+        
+        const key = 's' + stepNum;
+        if (!grp.progress[expId][key]) {
+            grp.progress[expId][key] = true;
+            if (points > 0) {
+                grp.xp += points;
+                addLog(`⭐ <strong>${grp.name}</strong> đạt <strong>+${points} XP</strong> (TN ${expId} - Bước ${stepNum})`);
+            } else {
+                addLog(`👁️ <strong>${grp.name}</strong> đã xem đáp án TN ${expId} - Bước ${stepNum} (0 XP)`);
+            }
+            saveToGoogleSheets();
+        }
+    }
+
+    function updateStudentTopBar() {
+        const badge = document.getElementById('nav-current-group-badge');
+        if (!currentGroupKey || !appData.groups[currentGroupKey]) {
+            badge.innerText = "Chưa đăng nhập";
+            return;
+        }
+        const grp = appData.groups[currentGroupKey];
+        badge.innerText = `${grp.name}: ${grp.xp} XP`;
+        
+        const nameEl = document.getElementById('active-group-name');
+        if (nameEl) nameEl.innerText = grp.name + (grp.hasFastestBonus ? " ⚡" : "");
+        const xpEl = document.getElementById('active-group-xp');
+        if (xpEl) xpEl.innerText = grp.xp;
+
+        const topSubBtn = document.getElementById('top-submit-btn');
+        const botSubBtn = document.getElementById('bottom-submit-btn');
+        const subBanner = document.getElementById('submitted-banner');
+        const subBannerTxt = document.getElementById('submitted-banner-text');
+
+        if (topSubBtn && botSubBtn && subBanner && subBannerTxt) {
+            if (grp.submitted) {
+                topSubBtn.innerText = "✅ Đã Nộp Bài (Xem kết quả)";
+                topSubBtn.classList.add('submitted');
+                botSubBtn.innerText = "✅ Đã Nộp Bài";
+                botSubBtn.classList.add('submitted');
+                subBanner.classList.remove('hidden');
+                subBannerTxt.innerHTML = `✅ <strong>${grp.name}</strong> đã nộp bài lúc ${grp.submitTimeStr} (Thời gian: ${formatDuration(grp.durationSec)}) — Tổng điểm: <strong>${grp.xp} XP</strong> ${grp.hasFastestBonus ? '⚡ <em>(Gồm +10 XP Đội nhanh nhất!)</em>' : ''}`;
+            } else {
+                topSubBtn.innerText = "📥 Nộp Bài Của Nhóm";
+                topSubBtn.classList.remove('submitted');
+                botSubBtn.innerText = "📥 Nộp Bài Của Nhóm";
+                botSubBtn.classList.remove('submitted');
+                subBanner.classList.add('hidden');
+            }
+        }
+
+        const pillsArea = document.getElementById('student-nav-pills');
+        if (pillsArea) {
+            pillsArea.innerHTML = '';
+            EXPERIMENTS.forEach((item, idx) => {
+                const p = getGroupProgress(item.id);
+                const btn = document.createElement('button');
+                btn.className = 'pill';
+                if (idx === currentExpIndex) btn.classList.add('current');
+                if (p.s1 && p.s2 && p.s3) btn.classList.add('done');
+                btn.innerText = idx + 1;
+                btn.onclick = () => loadExperiment(idx);
+                pillsArea.appendChild(btn);
+            });
+        }
+    }
+
+    function loadExperiment(index) {
+        currentExpIndex = index;
+        const exp = EXPERIMENTS[index];
+        const prog = getGroupProgress(exp.id);
+        lastFocusedFormulaInput = null;
+
+        updateStudentTopBar();
+
+        document.getElementById('exp-tag').innerText = `Thí nghiệm ${index + 1} / ${EXPERIMENTS.length} (Gợi ý: ${exp.assignedGroupHint})`;
+        document.getElementById('exp-title').innerText = exp.title;
+        document.getElementById('phenomenon-box').innerHTML = `<strong>🔎 Hiện tượng quan sát:</strong><br>${exp.phenomenon}`;
+
+        const liquid = document.getElementById('beaker-liquid');
+        const precip = document.getElementById('beaker-precipitate');
+        const bubbles = document.getElementById('beaker-bubbles');
+
+        liquid.style.backgroundColor = exp.visual.liquidColor;
+        precip.style.backgroundColor = exp.visual.precipColor;
+        precip.style.height = exp.visual.precipHeight;
+
+        bubbles.innerHTML = '';
+        if (exp.visual.bubbles) {
+            for (let i = 0; i < 8; i++) {
+                const b = document.createElement('div');
+                b.className = 'bubble';
+                const size = 6 + Math.random() * 8;
+                b.style.width = `${size}px`;
+                b.style.height = `${size}px`;
+                b.style.left = `${15 + Math.random() * 70}%`;
+                b.style.animationDelay = `${Math.random() * 1.5}s`;
+                bubbles.appendChild(b);
+            }
+        }
+
+        setupStep1(exp, prog);
+        setupStep2(exp, prog);
+        setupStep3(exp, prog);
+
+        document.getElementById('prev-btn').disabled = (index === 0);
+        document.getElementById('next-btn').disabled = (index === EXPERIMENTS.length - 1);
+    }
+
+    function setupStep1(exp, prog) {
+        const card = document.getElementById('step1-card');
+        const status = document.getElementById('step1-status');
+        const fb = document.getElementById('step1-feedback');
+        const grid = document.getElementById('condition-grid');
+
+        grid.innerHTML = '';
+        fb.className = 'feedback-msg';
+        fb.innerHTML = '';
+
+        CONDITIONS.forEach(cond => {
+            const btn = document.createElement('button');
+            btn.className = 'cond-btn';
+            if (prog.s1 && cond.id === exp.conditionId) { btn.classList.add('correct'); }
+            if (prog.s1) btn.disabled = true;
+            btn.innerHTML = `<span>🔹</span> <span>${cond.label}</span>`;
+            btn.onclick = () => {
+                if (cond.id === exp.conditionId) {
+                    setGroupStepDone(exp.id, 1, 10);
+                    loadExperiment(currentExpIndex);
+                } else {
+                    btn.classList.add('wrong');
+                    fb.className = 'feedback-msg error';
+                    fb.innerHTML = `❌ Chưa đúng! Hãy nhìn hiện tượng trong cốc thí nghiệm để chọn lại.`;
+                }
+            };
+            grid.appendChild(btn);
+        });
+
+        if (prog.s1) {
+            card.className = 'step-card completed';
+            status.innerText = 'Đã hoàn thành (+10 XP)';
+            status.style.background = '#dcfce7';
+            status.style.color = '#166534';
+            fb.className = 'feedback-msg success';
+            fb.innerHTML = `✅ ${exp.conditionExplain}`;
+        } else {
+            card.className = 'step-card active';
+            status.innerText = 'Đang thực hiện';
+            status.style.background = '#e0f2fe';
+            status.style.color = '#0369a1';
+        }
+    }
+
+    function setupStep2(exp, prog) {
+        const card = document.getElementById('step2-card');
+        const status = document.getElementById('step2-status');
+        const fb = document.getElementById('step2-feedback');
+        const row = document.getElementById('mol-eq-row');
+
+        row.innerHTML = '';
+        fb.className = 'feedback-msg';
+        fb.innerHTML = '';
+
+        exp.reactants.forEach((r, idx) => {
+            if (idx > 0) row.appendChild(Object.assign(document.createElement('span'), { innerText: '+' }));
+            const inp = document.createElement('input');
+            inp.type = 'number'; inp.min = '1'; inp.placeholder = '1'; inp.className = 'coeff-input reactant-coeff';
+            if (prog.s2) { inp.value = r.coeff; inp.disabled = true; }
+            const lbl = document.createElement('span'); lbl.className = 'chem-text'; lbl.innerHTML = r.display;
+            row.appendChild(inp); row.appendChild(lbl);
+        });
+
+        row.appendChild(Object.assign(document.createElement('span'), { className: 'arrow', innerText: '⟶' }));
+
+        exp.products.forEach((p, idx) => {
+            if (idx > 0) row.appendChild(Object.assign(document.createElement('span'), { innerText: '+' }));
+            const cInp = document.createElement('input');
+            cInp.type = 'number'; cInp.min = '1'; cInp.placeholder = '1'; cInp.className = 'coeff-input product-coeff';
+
+            const fInp = document.createElement('input');
+            fInp.type = 'text'; fInp.placeholder = `Sản phẩm ${idx + 1}`; fInp.className = 'formula-input product-formula';
+            fInp.addEventListener('focus', function() { lastFocusedFormulaInput = this; });
+
+            if (prog.s2) { cInp.value = p.coeff; cInp.disabled = true; fInp.value = p.formula; fInp.disabled = true; }
+            row.appendChild(cInp); row.appendChild(fInp);
+        });
+
+        const helper = document.getElementById('chem-helper');
+        helper.innerHTML = `<span class="helper-label">⚡ Chèn nhanh công thức:</span>`;
+        exp.chipSuggestions.forEach(chem => {
+            const chip = document.createElement('button');
+            chip.type = 'button'; chip.className = 'chip-btn'; chip.innerText = chem;
+            chip.onclick = () => {
+                if (prog.s2) return;
+                if (!lastFocusedFormulaInput) {
+                    const allF = document.querySelectorAll('.product-formula');
+                    for (let el of allF) { if (!el.value.trim()) { lastFocusedFormulaInput = el; break; } }
+                    if (!lastFocusedFormulaInput) lastFocusedFormulaInput = allF[0];
+                }
+                if (lastFocusedFormulaInput) { lastFocusedFormulaInput.value = chem; lastFocusedFormulaInput.focus(); }
+            };
+            helper.appendChild(chip);
+        });
+
+        if (prog.s2) {
+            card.className = 'step-card completed';
+            status.innerText = 'Đã hoàn thành (+20 XP)';
+            status.style.background = '#dcfce7'; status.style.color = '#166534';
+            fb.className = 'feedback-msg success'; fb.innerHTML = `🎉 Đã hoàn thành phương trình phân tử: <strong>${exp.fullMolText}</strong>`;
+        } else if (prog.s1) {
+            card.className = 'step-card active';
+            status.innerText = 'Đang thực hiện';
+            status.style.background = '#e0f2fe'; status.style.color = '#0369a1';
+        } else {
+            card.className = 'step-card locked';
+            status.innerText = 'Chưa mở khóa';
+            status.style.background = '#f1f5f9'; status.style.color = '#64748b';
+        }
+    }
+
+    function normalizeFormula(str) { return str.replace(/\s+/g, '').replace(/[↓↑]/g, '').toUpperCase(); }
+
+    function checkStep2() {
+        const exp = EXPERIMENTS[currentExpIndex];
+        const fb = document.getElementById('step2-feedback');
+
+        const rCoeffs = document.querySelectorAll('.reactant-coeff');
+        let reactantsMatch = true;
+        rCoeffs.forEach((inp, idx) => {
+            const val = inp.value.trim() === '' ? 1 : parseInt(inp.value.trim(), 10);
+            if (val !== exp.reactants[idx].coeff) reactantsMatch = false;
+        });
+
+        const pCoeffs = document.querySelectorAll('.product-coeff');
+        const pFormulas = document.querySelectorAll('.product-formula');
+
+        let userProducts = [];
+        for (let i = 0; i < exp.products.length; i++) {
+            const cVal = pCoeffs[i].value.trim() === '' ? 1 : parseInt(pCoeffs[i].value.trim(), 10);
+            const fVal = normalizeFormula(pFormulas[i].value);
+            userProducts.push({ coeff: cVal, formula: fVal });
+        }
+
+        let productsFormulaMatch = true;
+        let productsCoeffMatch = true;
+        let usedIndices = new Set();
+
+        exp.products.forEach(expectedProd => {
+            const expectedNorm = normalizeFormula(expectedProd.formula);
+            let foundIdx = -1;
+            for (let i = 0; i < userProducts.length; i++) {
+                if (!usedIndices.has(i) && userProducts[i].formula === expectedNorm) {
+                    foundIdx = i; break;
+                }
+            }
+            if (foundIdx === -1) productsFormulaMatch = false;
+            else {
+                usedIndices.add(foundIdx);
+                if (userProducts[foundIdx].coeff !== expectedProd.coeff) productsCoeffMatch = false;
+            }
+        });
+
+        if (!productsFormulaMatch) {
+            fb.className = 'feedback-msg error';
+            fb.innerHTML = `❌ Công thức sản phẩm chưa đúng. Hãy kiểm tra lại hoặc bấm "Gợi ý sản phẩm"!`;
+            return;
+        }
+
+        if (!reactantsMatch || !productsCoeffMatch) {
+            fb.className = 'feedback-msg error';
+            fb.innerHTML = `⚠️ Công thức sản phẩm đã ĐÚNG, nhưng <strong>hệ số cân bằng</strong> chưa khớp!`;
+            return;
+        }
+
+        setGroupStepDone(exp.id, 2, 20);
+        loadExperiment(currentExpIndex);
+    }
+
+    function showHintStep2() {
+        const exp = EXPERIMENTS[currentExpIndex];
+        const fb = document.getElementById('step2-feedback');
+        fb.className = 'feedback-msg hint';
+        fb.innerHTML = `💡 <strong>Gợi ý:</strong> ${exp.hintProducts}`;
+    }
+
+    function revealStep2() {
+        setGroupStepDone(EXPERIMENTS[currentExpIndex].id, 2, 0);
+        loadExperiment(currentExpIndex);
+    }
+
+    function setupStep3(exp, prog) {
+        const card = document.getElementById('step3-card');
+        const status = document.getElementById('step3-status');
+        const fb = document.getElementById('step3-feedback');
+        const row = document.getElementById('ionic-eq-row');
+
+        row.innerHTML = '';
+        fb.className = 'feedback-msg';
+        fb.innerHTML = '';
+
+        exp.ionicReactants.forEach((ir, idx) => {
+            if (idx > 0) row.appendChild(Object.assign(document.createElement('span'), { innerText: '+' }));
+            const inp = document.createElement('input');
+            inp.type = 'number'; inp.min = '1'; inp.placeholder = '1'; inp.className = 'coeff-input ionic-r-coeff';
+            if (prog.s3) { inp.value = ir.coeff; inp.disabled = true; }
+            const lbl = document.createElement('span'); lbl.className = 'chem-text'; lbl.innerHTML = ir.display;
+            row.appendChild(inp); row.appendChild(lbl);
+        });
+
+        row.appendChild(Object.assign(document.createElement('span'), { className: 'arrow', innerText: '⟶' }));
+
+        exp.ionicProducts.forEach((ip, idx) => {
+            if (idx > 0) row.appendChild(Object.assign(document.createElement('span'), { innerText: '+' }));
+            const inp = document.createElement('input');
+            inp.type = 'number'; inp.min = '1'; inp.placeholder = '1'; inp.className = 'coeff-input ionic-p-coeff';
+            if (prog.s3) { inp.value = ip.coeff; inp.disabled = true; }
+            const lbl = document.createElement('span'); lbl.className = 'chem-text'; lbl.innerHTML = ip.display;
+            row.appendChild(inp); row.appendChild(lbl);
+        });
+
+        if (prog.s3) {
+            card.className = 'step-card completed';
+            status.innerText = 'Đã hoàn thành (+20 XP)';
+            status.style.background = '#dcfce7'; status.style.color = '#166534';
+            fb.className = 'feedback-msg success'; fb.innerHTML = `🏆 Hoàn thành xuất sắc! Phương trình ion rút gọn: <strong>${exp.fullIonText}</strong>`;
+        } else if (prog.s2) {
+            card.className = 'step-card active';
+            status.innerText = 'Đang thực hiện';
+            status.style.background = '#e0f2fe'; status.style.color = '#0369a1';
+        } else {
+            card.className = 'step-card locked';
+            status.innerText = 'Chưa mở khóa';
+            status.style.background = '#f1f5f9'; status.style.color = '#64748b';
+        }
+    }
+
+    function checkStep3() {
+        const exp = EXPERIMENTS[currentExpIndex];
+        const fb = document.getElementById('step3-feedback');
+        const rInputs = document.querySelectorAll('.ionic-r-coeff');
+        const pInputs = document.querySelectorAll('.ionic-p-coeff');
+
+        let allMatch = true;
+        rInputs.forEach((inp, idx) => {
+            const val = inp.value.trim() === '' ? 1 : parseInt(inp.value.trim(), 10);
+            if (val !== exp.ionicReactants[idx].coeff) allMatch = false;
+        });
+        pInputs.forEach((inp, idx) => {
+            const val = inp.value.trim() === '' ? 1 : parseInt(inp.value.trim(), 10);
+            if (val !== exp.ionicProducts[idx].coeff) allMatch = false;
+        });
+
+        if (!allMatch) {
+            fb.className = 'feedback-msg error';
+            fb.innerHTML = `❌ Hệ số cân bằng ion rút gọn chưa đúng. Hãy kiểm tra lại!`;
+            return;
+        }
+        setGroupStepDone(exp.id, 3, 20);
+        loadExperiment(currentExpIndex);
+    }
+
+    function revealStep3() {
+        setGroupStepDone(EXPERIMENTS[currentExpIndex].id, 3, 0);
+        loadExperiment(currentExpIndex);
+    }
+
+    function prevExp() { if (currentExpIndex > 0) loadExperiment(currentExpIndex - 1); }
+    function nextExp() { if (currentExpIndex < EXPERIMENTS.length - 1) loadExperiment(currentExpIndex + 1); }
+
+    // =========================================================
+    // MODULE GIẢNG VIÊN: DASHBOARD
+    // =========================================================
+    function renderTeacherDashboard() {
+        const groupList = Object.values(appData.groups).sort((a, b) => {
+            if (b.xp !== a.xp) return b.xp - a.xp;
+            return (a.durationSec || 999999) - (b.durationSec || 999999);
+        });
+
+        const submittedCount = groupList.filter(g => g.submitted).length;
+        document.getElementById('stat-total-groups').innerText = `${groupList.length} / ${submittedCount} đã nộp`;
+        document.getElementById('stat-top-group').innerText = groupList.length > 0 ? `${groupList[0].name} (${groupList[0].xp} XP)` : "Chưa có";
+
+        if (appData.fastestGroupKey && appData.groups[appData.fastestGroupKey]) {
+            const fg = appData.groups[appData.fastestGroupKey];
+            document.getElementById('stat-fastest-group').innerText = `${fg.name} (${formatDuration(fg.durationSec)})`;
+        } else {
+            document.getElementById('stat-fastest-group').innerText = "Chưa có";
+        }
+
+        const tbody = document.getElementById('leaderboard-tbody');
+        tbody.innerHTML = '';
+
+        if (groupList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 26px; color:#64748b;">Chưa có nhóm nào đăng nhập.</td></tr>`;
+        } else {
+            groupList.forEach((grp, idx) => {
+                const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+                let miniBadgesHtml = '<div class="exp-mini-badges">';
+                EXPERIMENTS.forEach(e => {
+                    const p = grp.progress[e.id] || {};
+                    let cls = '';
+                    if (p.s1 && p.s2 && p.s3) cls = 'done';
+                    else if (p.s1 || p.s2 || p.s3) cls = 'partial';
+                    miniBadgesHtml += `<div class="mini-exp ${cls}" title="TN ${e.id}">${e.id}</div>`;
+                });
+                miniBadgesHtml += '</div>';
+
+                const statusHtml = grp.submitted
+                    ? `<span class="submitted-tag">✅ Đã nộp (${formatDuration(grp.durationSec)})</span><br><small style="color:#64748b;">Lúc ${grp.submitTimeStr}</small>`
+                    : `<span class="working-tag">⏳ Đang làm bài...</span>`;
+
+                const fastestHtml = grp.hasFastestBonus ? `<br><span class="fastest-tag">⚡ Đội Nhanh Nhất (+10 XP)</span>` : '';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="rank-badge ${rankClass}">${idx + 1}</span></td>
+                    <td><strong style="font-size:1rem; color:#0f172a;">${grp.name}</strong>${fastestHtml}<br><span style="font-size:0.8rem; color:#64748b;">${grp.members || ''}</span></td>
+                    <td>${statusHtml}</td>
+                    <td><strong style="font-size:1.15rem; color:#d97706;">${grp.xp} XP</strong></td>
+                    <td>${miniBadgesHtml}</td>
+                    <td>
+                        <button class="bonus-btn bonus-plus" onclick="adjustGroupXP('${grp.name}', 10, 'Thưởng +10 XP')">+10 XP</button>
+                        <button class="bonus-btn bonus-plus" onclick="adjustGroupXP('${grp.name}', 5, 'Nhận xét chéo đúng')">+5 XP Nhận xét</button>
+                        <button class="bonus-btn bonus-minus" onclick="adjustGroupXP('${grp.name}', -5, 'Trừ điểm')">-5 XP</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const logContainer = document.getElementById('activity-log-list');
+        logContainer.innerHTML = '';
+        if (appData.logs.length === 0) {
+            logContainer.innerHTML = `<div style="color:#64748b; font-size:0.88rem;">Chưa có hoạt động nào được ghi nhận.</div>`;
+        } else {
+            appData.logs.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'log-item';
+                div.innerHTML = `<div class="log-time">🕒 ${item.time}</div><div>${item.text}</div>`;
+                logContainer.appendChild(div);
+            });
+        }
+    }
+
+    function adjustGroupXP(gName, delta, reason) {
+        if (!appData.groups[gName]) return;
+        appData.groups[gName].xp = Math.max(0, appData.groups[gName].xp + delta);
+        const sign = delta > 0 ? `+${delta}` : delta;
+        addLog(`👩‍🏫 Giảng viên đã điều chỉnh <strong>${sign} XP</strong> cho <strong>${gName}</strong> (${reason}).`);
+        saveToGoogleSheets();
+    }
+
+    function resetAllData() {
+        if (confirm("Bạn có chắc chắn muốn xóa toàn bộ điểm XP, thời gian và tiến độ để bắt đầu lớp mới không?")) {
+            appData = { groups: {}, fastestGroupKey: null, logs: [] };
+            currentGroupKey = null;
+            saveToGoogleSheets();
+            logoutGroup();
+            renderTeacherDashboard();
+            updateStudentTopBar();
+        }
+    }
+
+    function toggleAnswerKey() {
+        const box = document.getElementById('teacher-answer-key');
+        box.classList.toggle('hidden');
+        if (!box.classList.contains('hidden')) {
+            const content = document.getElementById('answer-key-content');
+            content.innerHTML = '';
+            EXPERIMENTS.forEach(e => {
+                const cond = CONDITIONS.find(c => c.id === e.conditionId);
+                const div = document.createElement('div');
+                div.className = 'key-card';
+                div.innerHTML = `
+                    <strong style="color:var(--primary-dark);">TN ${e.id}: ${e.title}</strong><br>
+                    • <strong>Điều kiện:</strong> ${cond ? cond.label : ''}<br>
+                    • <strong>PT phân tử:</strong> <code>${e.fullMolText}</code><br>
+                    • <strong>PT ion rút gọn:</strong> <code>${e.fullIonText}</code>
+                `;
+                content.appendChild(div);
+            });
+        }
+    }
+
+    window.onload = () => {
+        // Tự động quét (Poll) dữ liệu từ Google Sheets mỗi 3 giây
+        setInterval(loadFromGoogleSheets, 3000);
+        // Tải lần đầu tiên ngay khi mở trang
+        loadFromGoogleSheets();
+    };
+</script>
+
+</body>
+</html>
